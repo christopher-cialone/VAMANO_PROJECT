@@ -3,7 +3,7 @@
 import React, { FC, ReactNode, useMemo } from 'react';
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
-import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
+import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
 import {
   WalletModalProvider,
   WalletDisconnectButton,
@@ -28,7 +28,6 @@ export const WalletContextProvider: FC<WalletContextProviderProps> = ({ children
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),
-      new SolflareWalletAdapter(),
     ],
     []
   );
@@ -45,3 +44,4 @@ export const WalletContextProvider: FC<WalletContextProviderProps> = ({ children
 };
 
 export { WalletMultiButton, WalletDisconnectButton };
+
