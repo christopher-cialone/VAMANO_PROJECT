@@ -100,3 +100,5 @@ test.describe('VAMANO E2E Tests', () => {
     await expect(page.locator('text=ON-CHAIN NFTS')).toBeVisible();
   });
 });
+
+

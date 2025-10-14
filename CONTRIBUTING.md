@@ -248,3 +248,5 @@ By contributing, you agree that your contributions will be licensed under the MI
 ---
 
 **Thank you for contributing to VAMANO! Together, we're building the future of decentralized ticketing.**
+
+

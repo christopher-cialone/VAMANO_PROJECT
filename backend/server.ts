@@ -1,10 +1,9 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { Connection, PublicKey, Keypair } from '@solana/web3.js';
-// Note: UMI imports removed due to dependency issues
-// import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
-// import { mplCore } from '@metaplex-foundation/mpl-core';
+import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
+import { mplCore } from '@metaplex-foundation/mpl-core';
 
 dotenv.config();
 
@@ -18,9 +17,30 @@ app.use(express.json());
 // Initialize Solana connection
 const connection = new Connection(process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com');
 
-// Initialize UMI for Metaplex (commented out due to dependency issues)
-// const umi = createUmi(connection)
-//   .use(mplCore());
+// Initialize UMI for Metaplex
+const umi = createUmi(connection.rpcEndpoint)
+  .use(mplCore());
+
+// Mock Helius SDK for now (will be replaced with real implementation)
+class MockHelius {
+  async getAssetProof(mintAddress: string) {
+    console.log(`Mock Helius: Verifying asset proof for ${mintAddress}`);
+    return {
+      ownership: {
+        owner: new PublicKey("MockOwnerPublicKey11111111111111111111111111"),
+        delegatedBy: null,
+        frozen: false,
+      },
+      compression: {
+        compressed: true,
+        tree: new PublicKey("MockTreePublicKey11111111111111111111111111"),
+        leafId: 1,
+      },
+    };
+  }
+}
+
+const helius = new MockHelius();
 
 // Mock PassKit generator (in production, use actual PassKit SDK)
 class PassKitGenerator {

@@ -2,18 +2,11 @@
   "name": "vamano",
   "version": "1.0.0",
   "private": true,
-  "packageManager": "yarn@4.0.1",
-  "workspaces": [
-    "frontend",
-    "programs/*",
-    "backend",
-    "tests"
-  ],
   "scripts": {
-    "dev": "concurrently \"yarn workspace frontend dev\" \"yarn workspace backend dev\"",
-    "build": "yarn workspace frontend build && yarn workspace backend build",
-    "test": "yarn workspace tests test",
-    "deploy": "yarn workspace programs deploy"
+    "dev": "concurrently \"pnpm --filter frontend dev\" \"pnpm --filter backend dev\"",
+    "build": "pnpm --filter frontend build && pnpm --filter backend build",
+    "test": "pnpm --filter tests test",
+    "deploy": "pnpm --filter programs deploy"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
