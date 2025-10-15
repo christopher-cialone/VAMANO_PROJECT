@@ -1,0 +1,414 @@
+{
+  "version": "0.1.0",
+  "name": "vamano_program",
+  "instructions": [
+    {
+      "name": "initEvent",
+      "docs": [
+        "Initialize a new event with MPL-Hybrid support",
+        "Creates event PDA with collection metadata for fungible-to-NFT swaps"
+      ],
+      "accounts": [
+        {
+          "name": "event",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "creator",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "date",
+          "type": "i64"
+        },
+        {
+          "name": "venue",
+          "type": "string"
+        },
+        {
+          "name": "supply",
+          "type": "u64"
+        },
+        {
+          "name": "metadataUri",
+          "type": "string"
+        },
+        {
+          "name": "priceUsdc",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "mintTicket",
+      "docs": [
+        "Mint ticket with MPL-Hybrid logic",
+        "Simulates: USDC escrow → Hybrid pool → NFT mint with unique traits",
+        "In production: CPI to mpl-hybrid for fungible-to-NFT conversion"
+      ],
+      "accounts": [
+        {
+          "name": "event",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "buyer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "zkEnabled",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "rerollTicket",
+      "docs": [
+        "Re-roll dynamic traits for hybrid NFT",
+        "Allows updating NFT metadata (e.g., seat reassignment, tier upgrade)"
+      ],
+      "accounts": [
+        {
+          "name": "event",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "ticketId",
+          "type": "u64"
+        },
+        {
+          "name": "newTraitSeed",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "verifyTicket",
+      "docs": [
+        "Verify ticket ownership via QR scan",
+        "Called by off-chain verifier (e.g., door scanner)"
+      ],
+      "accounts": [
+        {
+          "name": "event",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ticketHolder",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "ticketId",
+          "type": "u64"
+        },
+        {
+          "name": "qrHash",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "enforceRoyalties",
+      "docs": [
+        "Enforce royalties on resale with MPL-Hybrid swap",
+        "10% total: 5% artist, 3% organizer, 2% platform",
+        "Called automatically on secondary market transfers"
+      ],
+      "accounts": [
+        {
+          "name": "event",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "seller",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "artist",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "organizer",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "platform",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "saleAmount",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Event",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "creator",
+            "type": "publicKey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "date",
+            "type": "i64"
+          },
+          {
+            "name": "venue",
+            "type": "string"
+          },
+          {
+            "name": "supply",
+            "type": "u64"
+          },
+          {
+            "name": "minted",
+            "type": "u64"
+          },
+          {
+            "name": "priceUsdc",
+            "type": "u64"
+          },
+          {
+            "name": "metadataUri",
+            "type": "string"
+          },
+          {
+            "name": "collectionMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ],
+  "events": [
+    {
+      "name": "EventCreated",
+      "fields": [
+        {
+          "name": "event",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "creator",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "index": false
+        },
+        {
+          "name": "supply",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "priceUsdc",
+          "type": "u64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "TicketMinted",
+      "fields": [
+        {
+          "name": "event",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "ticketId",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "buyer",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "amount",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "escrowAmount",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "royaltyReserve",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "zkEnabled",
+          "type": "bool",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "TicketRerolled",
+      "fields": [
+        {
+          "name": "event",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "ticketId",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "authority",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "newTraitSeed",
+          "type": "u64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "TicketVerified",
+      "fields": [
+        {
+          "name": "event",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "ticketId",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "holder",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "qrHash",
+          "type": "string",
+          "index": false
+        },
+        {
+          "name": "verifiedAt",
+          "type": "i64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "RoyaltiesEnforced",
+      "fields": [
+        {
+          "name": "event",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "saleAmount",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "artistRoyalty",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "organizerRoyalty",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "platformRoyalty",
+          "type": "u64",
+          "index": false
+        }
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "SupplyExceeded",
+      "msg": "Supply exceeded - all tickets minted"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidTicket",
+      "msg": "Invalid ticket ID or ownership"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidPaymentAmount",
+      "msg": "Payment amount insufficient"
+    }
+  ]
+}
