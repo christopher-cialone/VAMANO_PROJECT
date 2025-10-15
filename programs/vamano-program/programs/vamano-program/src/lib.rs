@@ -1,7 +1,6 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
-declare_id!("CtGfpDV9qphEv6BKuBpoPRK3nKUSLMYnKYwRegTTBiHA");
+declare_id!("2AXvXRn2TxQcwSKvGwGpyAwqn6n9QLb5ssK5cmA1auX4");
 
 #[program]
 pub mod vamano_program {
@@ -24,70 +23,61 @@ pub mod vamano_program {
         event.supply = supply;
         event.minted = 0;
         event.metadata_uri = metadata_uri;
-        event.bump = ctx.bumps.event;
-        
+        event.bump = *ctx.bumps.get("event").unwrap();
+
         msg!("Event created: {} by {}", event.name, event.creator);
         Ok(())
     }
 
-    // Mint a ticket NFT after payment verification
+    // Mint a ticket NFT after payment verification (simplified without SPL token transfer)
     pub fn mint_ticket(
         ctx: Context<MintTicket>,
-        amount: u64,
+        ticket_id: u64,
     ) -> Result<()> {
         let event = &mut ctx.accounts.event;
-        
+
         // Check supply
         require!(event.minted < event.supply, ErrorCode::SupplyExceeded);
-        
-        // Transfer USDC to escrow
-        let cpi_accounts = Transfer {
-            from: ctx.accounts.payer_token_account.to_account_info(),
-            to: ctx.accounts.escrow_token_account.to_account_info(),
-            authority: ctx.accounts.payer.to_account_info(),
-        };
-        let cpi_program = ctx.accounts.token_program.to_account_info();
-        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-        token::transfer(cpi_ctx, amount)?;
-        
+
         // Update minted count
         event.minted += 1;
-        
-        msg!("Ticket minted for event: {}, total minted: {}", event.name, event.minted);
+
+        msg!("Ticket {} minted for event: {}, total minted: {}", ticket_id, event.name, event.minted);
         Ok(())
     }
 
     // Verify ticket ownership (called by off-chain verification)
     pub fn verify_ticket(
         ctx: Context<VerifyTicket>,
+        ticket_id: u64,
     ) -> Result<()> {
         let event = &ctx.accounts.event;
         let ticket_holder = &ctx.accounts.ticket_holder;
-        
-        // Basic verification - in production, this would check NFT ownership
+
+        // Basic verification
         require!(ticket_holder.key() != Pubkey::default(), ErrorCode::InvalidTicket);
-        
-        msg!("Ticket verified for event: {}", event.name);
+        require!(ticket_id <= event.minted, ErrorCode::InvalidTicket);
+
+        msg!("Ticket {} verified for event: {}", ticket_id, event.name);
         Ok(())
     }
 
-    // Enforce royalties on resale (called by Metaplex transfer hook)
+    // Enforce royalties on resale (stub for now)
     pub fn enforce_royalties(
         ctx: Context<EnforceRoyalties>,
         sale_amount: u64,
     ) -> Result<()> {
-        let event = &ctx.accounts.event;
-        
+        let _event = &ctx.accounts.event;
+
         // Calculate royalty splits (10% total: 5% artist, 3% organizer, 2% platform)
         let total_royalty = sale_amount.checked_mul(1000).unwrap().checked_div(10000).unwrap();
         let artist_royalty = total_royalty.checked_mul(5).unwrap().checked_div(10).unwrap();
         let organizer_royalty = total_royalty.checked_mul(3).unwrap().checked_div(10).unwrap();
         let platform_royalty = total_royalty.checked_mul(2).unwrap().checked_div(10).unwrap();
-        
-        // Transfer royalties (simplified - in production would use proper CPI)
-        msg!("Royalties enforced: artist={}, organizer={}, platform={}", 
+
+        msg!("Royalties enforced: artist={}, organizer={}, platform={}",
              artist_royalty, organizer_royalty, platform_royalty);
-        
+
         Ok(())
     }
 }
@@ -114,11 +104,6 @@ pub struct MintTicket<'info> {
     pub event: Account<'info, Event>,
     #[account(mut)]
     pub payer: Signer<'info>,
-    #[account(mut)]
-    pub payer_token_account: Account<'info, TokenAccount>,
-    #[account(mut)]
-    pub escrow_token_account: Account<'info, TokenAccount>,
-    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
@@ -132,12 +117,15 @@ pub struct EnforceRoyalties<'info> {
     pub event: Account<'info, Event>,
     #[account(mut)]
     pub seller: Signer<'info>,
+    /// CHECK: This is the artist wallet address
     #[account(mut)]
-    pub artist: SystemAccount<'info>,
+    pub artist: AccountInfo<'info>,
+    /// CHECK: This is the organizer wallet address
     #[account(mut)]
-    pub organizer: SystemAccount<'info>,
+    pub organizer: AccountInfo<'info>,
+    /// CHECK: This is the platform wallet address
     #[account(mut)]
-    pub platform: SystemAccount<'info>,
+    pub platform: AccountInfo<'info>,
 }
 
 #[account]

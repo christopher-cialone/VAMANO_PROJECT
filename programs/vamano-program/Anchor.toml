@@ -1,15 +1,12 @@
-[toolchain]
-channel = "stable"
-
 [features]
 resolution = true
 skip-lint = false
 
 [programs.devnet]
-vamano_program = "CtGfpDV9qphEv6BKuBpoPRK3nKUSLMYnKYwRegTTBiHA"
+vamano_program = "2AXvXRn2TxQcwSKvGwGpyAwqn6n9QLb5ssK5cmA1auX4"
 
 [programs.localnet]
-vamano_program = "CtGfpDV9qphEv6BKuBpoPRK3nKUSLMYnKYwRegTTBiHA"
+vamano_program = "2AXvXRn2TxQcwSKvGwGpyAwqn6n9QLb5ssK5cmA1auX4"
 
 [registry]
 url = "https://api.apr.dev"
