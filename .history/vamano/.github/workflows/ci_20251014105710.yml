@@ -1,0 +1,173 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
+    
+    - name: Setup Yarn
+      run: corepack enable
+    
+    - name: Install dependencies
+      run: yarn install --immutable
+    
+    - name: Lint frontend
+      run: yarn workspace frontend lint
+    
+    - name: Lint backend
+      run: yarn workspace backend lint
+    
+    - name: Type check frontend
+      run: yarn workspace frontend type-check
+    
+    - name: Type check backend
+      run: yarn workspace backend type-check
+    
+    - name: Build frontend
+      run: yarn workspace frontend build
+    
+    - name: Build backend
+      run: yarn workspace backend build
+    
+    - name: Test frontend
+      run: yarn workspace frontend test --passWithNoTests
+    
+    - name: Test backend
+      run: yarn workspace backend test --passWithNoTests
+
+  anchor-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        components: rustfmt, clippy
+    
+    - name: Setup Solana
+      uses: coral-xyz/setup-anchor@v0
+      with:
+        anchor-version: '0.30.1'
+        solana-version: '1.18.0'
+    
+    - name: Setup Yarn
+      run: corepack enable
+    
+    - name: Install dependencies
+      run: yarn install --immutable
+    
+    - name: Build Anchor program
+      run: |
+        cd programs/vamano-program
+        anchor build
+    
+    - name: Test Anchor program
+      run: |
+        cd programs/vamano-program
+        anchor test
+
+  e2e-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'yarn'
+    
+    - name: Setup Yarn
+      run: corepack enable
+    
+    - name: Install dependencies
+      run: yarn install --immutable
+    
+    - name: Install Playwright browsers
+      run: yarn workspace tests exec playwright install --with-deps
+    
+    - name: Build frontend
+      run: yarn workspace frontend build
+    
+    - name: Start backend
+      run: |
+        yarn workspace backend build
+        yarn workspace backend start &
+        sleep 10
+    
+    - name: Start frontend
+      run: |
+        yarn workspace frontend start &
+        sleep 10
+    
+    - name: Run E2E tests
+      run: yarn workspace tests test
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: playwright-report
+        path: tests/playwright-report/
+
+  deploy:
+    needs: [test, anchor-test, e2e-test]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'yarn'
+    
+    - name: Setup Yarn
+      run: corepack enable
+    
+    - name: Install dependencies
+      run: yarn install --immutable
+    
+    - name: Build all packages
+      run: yarn build
+    
+    - name: Deploy to Vercel (Frontend)
+      uses: amondnet/vercel-action@v25
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        working-directory: ./frontend
+    
+    - name: Deploy Anchor program
+      run: |
+        cd programs/vamano-program
+        anchor deploy --provider.cluster devnet
+      env:
+        SOLANA_PRIVATE_KEY: ${{ secrets.SOLANA_PRIVATE_KEY }}
+
+

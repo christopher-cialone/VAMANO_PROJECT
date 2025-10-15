@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_BACKEND_URL=http://backend:3001
+      - NEXT_PUBLIC_SOLANA_NETWORK=devnet
+    depends_on:
+      - backend
+    networks:
+      - vamano-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - SOLANA_RPC_URL=https://api.devnet.solana.com
+    networks:
+      - vamano-network
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=vamano
+      - POSTGRES_USER=vamano
+      - POSTGRES_PASSWORD=vamano_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vamano-network
+
+networks:
+  vamano-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+
+

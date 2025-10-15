@@ -1,0 +1,19 @@
+{
+  "name": "vamano",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
+    "dev:watch": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\" \"cd programs/vamano-program && anchor watch\"",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "deploy": "cd programs/vamano-program && anchor deploy"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "concurrently": "^8.2.2",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.3.0"
+  },
+  "license": "MIT"
+}
