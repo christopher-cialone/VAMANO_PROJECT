@@ -1,4 +1,5 @@
 [toolchain]
+channel = "stable"
 
 [features]
 resolution = true
