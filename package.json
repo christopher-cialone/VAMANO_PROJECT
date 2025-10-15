@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"pnpm --filter frontend dev\" \"pnpm --filter backend dev\"",
-    "build": "pnpm --filter frontend build && pnpm --filter backend build",
-    "test": "pnpm --filter tests test",
-    "deploy": "pnpm --filter programs deploy"
+    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
+    "dev:watch": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\" \"cd programs/vamano-program && anchor watch\"",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "deploy": "cd programs/vamano-program && anchor deploy"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
