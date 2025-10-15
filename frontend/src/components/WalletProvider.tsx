@@ -1,47 +1,29 @@
 'use client';
 
-import React, { FC, ReactNode, useMemo } from 'react';
-import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
-import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
-import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
-import {
-  WalletModalProvider,
-  WalletDisconnectButton,
-  WalletMultiButton
-} from '@solana/wallet-adapter-react-ui';
-import { clusterApiUrl } from '@solana/web3.js';
-
-// Default styles that can be overridden by your app
-require('@solana/wallet-adapter-react-ui/styles.css');
+import React, { FC, ReactNode } from 'react';
 
 interface WalletContextProviderProps {
   children: ReactNode;
 }
 
+// Simplified wallet provider for testing
 export const WalletContextProvider: FC<WalletContextProviderProps> = ({ children }) => {
-  // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'.
-  const network = WalletAdapterNetwork.Devnet;
+  return <>{children}</>;
+};
 
-  // You can also provide a custom RPC endpoint.
-  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
-
-  const wallets = useMemo(
-    () => [
-      new PhantomWalletAdapter(),
-    ],
-    []
-  );
-
+// Mock wallet buttons
+export const WalletMultiButton = () => {
   return (
-    <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect>
-        <WalletModalProvider>
-          {children}
-        </WalletModalProvider>
-      </WalletProvider>
-    </ConnectionProvider>
+    <button className="px-4 py-2 bg-green-400 text-black font-mono hover:bg-green-300">
+      Connect Wallet (Mock)
+    </button>
   );
 };
 
-export { WalletMultiButton, WalletDisconnectButton };
-
+export const WalletDisconnectButton = () => {
+  return (
+    <button className="px-4 py-2 border border-green-400 text-green-400 font-mono hover:bg-green-400 hover:text-black">
+      Disconnect
+    </button>
+  );
+};

@@ -2,6 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import axios from 'axios';
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
 export default function VerifyPage() {
   const [qrCode, setQrCode] = useState('');
@@ -13,15 +16,28 @@ export default function VerifyPage() {
     
     setIsVerifying(true);
     try {
-      // Mock verification - in production, this would call the backend
-      const response = await fetch(`/api/verify-qr/${qrCode}`);
-      const result = await response.json();
-      setVerificationResult(result);
+      // Call backend verification endpoint
+      const response = await axios.get(`${BACKEND_URL}/verify-qr/${encodeURIComponent(qrCode.trim())}`);
+      
+      if (response.data.valid) {
+        setVerificationResult({
+          valid: true,
+          event: response.data.event || 'Unknown Event',
+          owner: response.data.owner || 'Unknown',
+          nftMint: qrCode.trim(),
+          message: response.data.message
+        });
+      } else {
+        setVerificationResult({
+          valid: false,
+          message: response.data.message || 'Invalid ticket'
+        });
+      }
     } catch (error) {
       console.error('Verification failed:', error);
       setVerificationResult({
         valid: false,
-        message: 'Verification failed. Please try again.'
+        message: 'Verification failed. Please check your connection and try again.'
       });
     } finally {
       setIsVerifying(false);

@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { WalletMultiButton } from '@/components/WalletProvider';
+import axios from 'axios';
 
 interface EventData {
   name: string;
@@ -12,7 +14,11 @@ interface EventData {
   description: string;
 }
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+
 export default function BuilderPage() {
+  const [connected, setConnected] = useState(false);
+  const [publicKey] = useState<string | null>('MockWallet123...');
   const [activeTab, setActiveTab] = useState<'event' | 'logic' | 'design'>('event');
   const [eventData, setEventData] = useState<EventData>({
     name: '',
@@ -22,8 +28,9 @@ export default function BuilderPage() {
     price: 50,
     description: ''
   });
-  const [isWalletConnected, setIsWalletConnected] = useState(false);
   const [showAccountModal, setShowAccountModal] = useState(false);
+  const [isCreatingEvent, setIsCreatingEvent] = useState(false);
+  const [eventId, setEventId] = useState<string | null>(null);
 
   const handleInputChange = (field: keyof EventData, value: string | number) => {
     setEventData(prev => ({ ...prev, [field]: value }));
@@ -33,9 +40,35 @@ export default function BuilderPage() {
     setShowAccountModal(true);
   };
 
-  const handleGoLive = () => {
-    // This would trigger the payment flow
-    console.log('Going live with event:', eventData);
+  const handleGoLive = async () => {
+    if (!eventData.name || !eventData.date || !eventData.venue) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    setIsCreatingEvent(true);
+    try {
+      // Create event on backend
+      const response = await axios.post(`${BACKEND_URL}/create-event`, {
+        name: eventData.name,
+        date: new Date(eventData.date).getTime() / 1000,
+        venue: eventData.venue,
+        supply: eventData.supply,
+        metadataUri: `https://arweave.net/${eventData.name.toLowerCase().replace(/\s+/g, '-')}`,
+        creatorWallet: publicKey || 'MockWallet'
+      });
+
+      if (response.data.success) {
+        setEventId(response.data.eventId);
+        alert(`Event created successfully! Event ID: ${response.data.eventId}`);
+        console.log('Event created:', response.data);
+      }
+    } catch (error) {
+      console.error('Error creating event:', error);
+      alert('Failed to create event. Please try again.');
+    } finally {
+      setIsCreatingEvent(false);
+    }
   };
 
   return (
@@ -47,16 +80,7 @@ export default function BuilderPage() {
             VAMANO
           </Link>
           <div className="flex items-center space-x-4">
-            <button 
-              onClick={() => setIsWalletConnected(!isWalletConnected)}
-              className={`px-4 py-2 border border-green-400 ${
-                isWalletConnected 
-                  ? 'bg-green-400 text-black' 
-                  : 'text-green-400 hover:bg-green-400 hover:text-black'
-              } transition-colors`}
-            >
-              {isWalletConnected ? 'CONNECTED' : 'CONNECT WALLET'}
-            </button>
+            <WalletMultiButton className="!bg-transparent !border !border-green-400 !text-green-400 hover:!bg-green-400 hover:!text-black !transition-colors !font-mono" />
           </div>
         </div>
       </header>
@@ -378,10 +402,10 @@ export default function BuilderPage() {
             </button>
             <button
               onClick={handleGoLive}
-              disabled={!eventData.name || !eventData.date || !eventData.venue}
+              disabled={!connected || !eventData.name || !eventData.date || !eventData.venue || isCreatingEvent}
               className="px-8 py-3 bg-green-400 text-black font-bold hover:bg-green-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              GO LIVE
+              {isCreatingEvent ? 'CREATING...' : 'GO LIVE'}
             </button>
           </div>
         </div>
