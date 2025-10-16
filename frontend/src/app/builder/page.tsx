@@ -519,12 +519,12 @@ export default function BuilderPage() {
               </button>
               <button
                 onClick={() => {
-                  setConnected(true);
+                  // Wallet connection handled by WalletMultiButton
                   setShowAccountModal(false);
                 }}
                 className="px-6 py-2 bg-green-400 text-black font-bold hover:bg-green-300 transition-colors"
               >
-                Connect
+                Close
               </button>
             </div>
           </div>
@@ -557,34 +557,63 @@ export default function BuilderPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-400">Wallet:</span>
-                  <span className="text-purple-400 text-xs font-mono">{publicKey?.slice(0, 8)}...{publicKey?.slice(-8)}</span>
+                  <span className="text-purple-400 text-xs font-mono">
+                    {publicKey?.toBase58().slice(0, 8)}...{publicKey?.toBase58().slice(-8)}
+                  </span>
                 </div>
               </div>
 
-              {/* MoonPay Widget */}
+              {/* MoonPay Widget with Pre-Fill */}
               <MoonPayBuyWidget
                 variant="overlay"
                 baseCurrencyCode="usd"
                 baseCurrencyAmount={eventData.price.toString()}
                 defaultCurrencyCode="usdc_sol"
-                walletAddress={publicKey || ''}
+                walletAddress={publicKey?.toBase58() || ''}
+                externalCustomerId={eventId || undefined}
+                onUrlSignatureRequested={async (url: string) => {
+                  // Sign URL for security (production)
+                  try {
+                    const response = await axios.post(`${BACKEND_URL}/sign-moonpay-url`, { url });
+                    console.log('URL signed:', response.data.signature);
+                    return response.data.signature;
+                  } catch (error) {
+                    console.error('URL signing failed:', error);
+                    return '';
+                  }
+                }}
                 onLogin={async () => {
-                  console.log('MoonPay login');
+                  console.log('MoonPay login initiated');
                 }}
                 onTransactionCompleted={async (props: any) => {
-                  console.log('Transaction completed:', props);
+                  console.log('✅ Transaction completed:', props);
+                  setShowMoonPayWidget(false);
                   handleMoonPaySuccess(props?.externalTransactionId || 'test_tx_' + Date.now());
                 }}
                 onError={async (error: any) => {
+                  console.error('❌ MoonPay error:', error);
                   handleMoonPayError(error);
                 }}
               />
 
-              <div className="mt-4 p-3 bg-black/50 rounded text-xs text-gray-400 space-y-1">
-                <div>// Sandbox mode: Use test card 4539 9876 5432 1234</div>
-                <div>// Expiry: Any future date | CVV: Any 3 digits</div>
-                <div>// After payment: NFT auto-mints + Apple Pass generates</div>
+              {/* Test Card Instructions */}
+              <div className="mt-4 p-4 bg-black/70 border border-green-400/30 rounded">
+                <div className="text-xs font-bold text-green-400 mb-2">SANDBOX TEST CARDS</div>
+                <div className="text-xs text-gray-300 space-y-1 font-mono">
+                  <div>💳 Visa: <span className="text-green-400">4242 4242 4242 4242</span></div>
+                  <div>📅 Expiry: <span className="text-green-400">12/30</span></div>
+                  <div>🔒 CVV: <span className="text-green-400">123</span></div>
+                  <div className="mt-2 text-gray-400 font-sans">After payment: NFT mints → Apple Pass ready</div>
+                </div>
               </div>
+              
+              {/* Processing Indicator */}
+              {isMinting && (
+                <div className="mt-4 p-3 bg-green-400/10 border border-green-400/30 rounded flex items-center space-x-3">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-green-400 border-t-transparent"></div>
+                  <span className="text-green-400 text-sm font-medium">Processing Payment...</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
