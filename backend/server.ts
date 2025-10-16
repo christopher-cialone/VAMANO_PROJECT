@@ -329,6 +329,45 @@ app.get('/download-pass/:nftMint', async (req: Request, res: Response) => {
   }
 });
 
+// Sign MoonPay URL for security (required for production)
+app.post('/sign-moonpay-url', async (req: Request, res: Response) => {
+  try {
+    const { url } = req.body;
+    
+    if (!url) {
+      return res.status(400).json({ error: 'URL is required' });
+    }
+
+    console.log('🔐 Signing MoonPay URL:', url.substring(0, 50) + '...');
+
+    // Create signature for URL
+    const nonce = Date.now();
+    const message = `Sign URL: ${url} nonce: ${nonce}`;
+    
+    // In production, this would use a proper wallet signing mechanism
+    // For now, we'll create a simple HMAC signature
+    const moonpaySecret = process.env.MOONPAY_SECRET || 'test_secret_123';
+    const signature = crypto
+      .createHmac('sha256', moonpaySecret)
+      .update(message)
+      .digest('hex');
+
+    console.log('✅ URL signed successfully');
+
+    res.json({
+      signature,
+      nonce,
+      message: 'URL signed successfully'
+    });
+  } catch (error) {
+    console.error('❌ Error signing URL:', error);
+    res.status(500).json({ 
+      error: 'Failed to sign URL',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 // MoonPay webhook with signature verification and auto-minting
 app.post('/moonpay-callback', async (req: Request, res: Response) => {
   try {
@@ -462,6 +501,7 @@ app.listen(PORT, () => {
   console.log(`🎟️  Mint Ticket:     POST http://localhost:${PORT}/mint-ticket`);
   console.log(`🔍 Verify QR:       GET  http://localhost:${PORT}/verify-qr/:hash`);
   console.log(`📱 Download Pass:   GET  http://localhost:${PORT}/download-pass/:mint`);
+  console.log(`🔐 Sign MoonPay:    POST http://localhost:${PORT}/sign-moonpay-url`);
   console.log(`💰 MoonPay Webhook: POST http://localhost:${PORT}/moonpay-callback`);
   console.log('='.repeat(70));
   console.log('🔗 Network:', connection.rpcEndpoint);
