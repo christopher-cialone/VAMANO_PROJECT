@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import axios from 'axios';
+import { Html5Qrcode } from 'html5-qrcode';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
@@ -10,21 +11,79 @@ export default function VerifyPage() {
   const [qrCode, setQrCode] = useState('');
   const [verificationResult, setVerificationResult] = useState<any>(null);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
+  const scannerDivId = 'qr-reader';
 
-  const handleVerify = async () => {
-    if (!qrCode.trim()) return;
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (html5QrCodeRef.current) {
+        html5QrCodeRef.current.stop().catch((err) => {
+          console.error('Error stopping QR scanner:', err);
+        });
+      }
+    };
+  }, []);
+
+  const handleStartScanning = async () => {
+    try {
+      setScanError(null);
+      html5QrCodeRef.current = new Html5Qrcode(scannerDivId);
+      
+      await html5QrCodeRef.current.start(
+        { facingMode: 'environment' }, // Use back camera on mobile
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+        },
+        (decodedText) => {
+          console.log('QR Code detected:', decodedText);
+          setQrCode(decodedText);
+          handleStopScanning();
+          // Auto-verify after scan
+          setTimeout(() => handleVerify(decodedText), 500);
+        },
+        (errorMessage) => {
+          // Silent error handling - this fires constantly during scanning
+        }
+      );
+      
+      setIsScanning(true);
+    } catch (error) {
+      console.error('Error starting QR scanner:', error);
+      setScanError('Failed to start camera. Please check permissions.');
+    }
+  };
+
+  const handleStopScanning = async () => {
+    try {
+      if (html5QrCodeRef.current) {
+        await html5QrCodeRef.current.stop();
+        html5QrCodeRef.current = null;
+      }
+      setIsScanning(false);
+    } catch (error) {
+      console.error('Error stopping QR scanner:', error);
+    }
+  };
+
+  const handleVerify = async (codeToVerify?: string) => {
+    const code = codeToVerify || qrCode.trim();
+    if (!code) return;
     
     setIsVerifying(true);
     try {
       // Call backend verification endpoint
-      const response = await axios.get(`${BACKEND_URL}/verify-qr/${encodeURIComponent(qrCode.trim())}`);
+      const response = await axios.get(`${BACKEND_URL}/verify-qr/${encodeURIComponent(code)}`);
       
       if (response.data.valid) {
         setVerificationResult({
           valid: true,
           event: response.data.event || 'Unknown Event',
           owner: response.data.owner || 'Unknown',
-          nftMint: qrCode.trim(),
+          nftMint: code,
           message: response.data.message
         });
       } else {
@@ -75,17 +134,40 @@ export default function VerifyPage() {
             
             <div className="border border-green-400/30 bg-green-400/5 rounded p-8 text-center">
               <div className="mb-4">
-                <div className="w-64 h-64 mx-auto border border-green-400/30 bg-black rounded flex items-center justify-center">
-                  <div className="text-gray-500">
-                    <div className="text-sm mb-2">Camera Feed</div>
-                    <div className="text-xs">QR Scanner would appear here</div>
+                {!isScanning ? (
+                  <div className="w-64 h-64 mx-auto border border-green-400/30 bg-black rounded flex items-center justify-center">
+                    <div className="text-gray-500">
+                      <div className="text-6xl mb-2">📷</div>
+                      <div className="text-sm mb-2">Camera Ready</div>
+                      <div className="text-xs">Click below to start scanning</div>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div id={scannerDivId} className="w-full mx-auto rounded overflow-hidden"></div>
+                )}
               </div>
               
-              <button className="px-6 py-3 bg-green-400 text-black font-bold hover:bg-green-300 transition-colors">
-                START CAMERA
-              </button>
+              {scanError && (
+                <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded text-red-400 text-sm">
+                  {scanError}
+                </div>
+              )}
+              
+              {!isScanning ? (
+                <button
+                  onClick={handleStartScanning}
+                  className="px-6 py-3 bg-green-400 text-black font-bold hover:bg-green-300 transition-colors"
+                >
+                  START CAMERA
+                </button>
+              ) : (
+                <button
+                  onClick={handleStopScanning}
+                  className="px-6 py-3 bg-red-500 text-white font-bold hover:bg-red-400 transition-colors"
+                >
+                  STOP SCANNING
+                </button>
+              )}
             </div>
 
             <div className="text-sm text-gray-400">
@@ -93,6 +175,9 @@ export default function VerifyPage() {
               <div>• QR Code from Apple Wallet</div>
               <div>• Direct ticket hash</div>
               <div>• NFT mint address</div>
+              <div className="mt-2 text-xs text-green-400">
+                {isScanning && '⚡ Scanning... Point camera at QR code'}
+              </div>
             </div>
           </div>
 
