@@ -1,11 +1,25 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import crypto from 'crypto';
 import { Connection, PublicKey, Keypair, SystemProgram } from '@solana/web3.js';
 import { Program, AnchorProvider, Wallet, BN } from '@coral-xyz/anchor';
 import idl from './vamano_program.json';
 
 dotenv.config();
+
+// ============================================================================
+// CREATOR MERCHANT SETUP
+// ============================================================================
+// To receive funds from ticket sales, creators must complete KYB (Know Your Business):
+// 1. Go to https://dashboard.moonpay.com/kyb
+// 2. Complete business verification
+// 3. This enables:
+//    - USD payments to your bank account
+//    - USDC payments to your Solana wallet
+//    - Compliance with payment regulations
+// 4. Add your MOONPAY_API_KEY and MOONPAY_SECRET to .env
+// ============================================================================
 
 const app = express();
 const PORT = process.env.PORT || 3001;
