@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { WalletMultiButton } from '@/components/WalletProvider';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { MoonPayBuyWidget } from '@moonpay/moonpay-react';
 import axios from 'axios';
 
@@ -18,8 +19,9 @@ interface EventData {
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
 export default function BuilderPage() {
-  const [connected, setConnected] = useState(false);
-  const [publicKey] = useState<string | null>('MockWallet123...');
+  // Real wallet connection
+  const { publicKey, connected } = useWallet();
+  
   const [activeTab, setActiveTab] = useState<'event' | 'logic' | 'design'>('event');
   const [eventData, setEventData] = useState<EventData>({
     name: '',
@@ -46,11 +48,20 @@ export default function BuilderPage() {
   };
 
   const handleGoLive = async () => {
+    // Wallet guard
+    if (!connected || !publicKey) {
+      alert('Please connect your wallet first!');
+      console.log('Go Live blocked: No wallet connected');
+      return;
+    }
+
     if (!eventData.name || !eventData.date || !eventData.venue) {
       alert('Please fill in all required fields');
       return;
     }
 
+    console.log('Go Live clicked, wallet:', publicKey.toBase58());
+    
     setIsCreatingEvent(true);
     try {
       // Create event on backend
@@ -59,14 +70,17 @@ export default function BuilderPage() {
         date: new Date(eventData.date).getTime() / 1000,
         venue: eventData.venue,
         supply: eventData.supply,
+        priceUsdc: eventData.price * 100, // Convert to cents
         metadataUri: `https://arweave.net/${eventData.name.toLowerCase().replace(/\s+/g, '-')}`,
-        creatorWallet: publicKey || 'MockWallet'
+        creatorWallet: publicKey.toBase58()
       });
 
       if (response.data.success) {
-        setEventId(response.data.eventId);
-        alert(`Event created successfully! Event ID: ${response.data.eventId}`);
-        console.log('Event created:', response.data);
+        setEventId(response.data.eventPda || response.data.eventId);
+        console.log('Event created successfully:', response.data);
+        
+        // Open MoonPay widget after event creation
+        setShowMoonPayWidget(true);
       }
     } catch (error) {
       console.error('Error creating event:', error);
@@ -455,9 +469,14 @@ export default function BuilderPage() {
             <button
               onClick={handleGoLive}
               disabled={!connected || !eventData.name || !eventData.date || !eventData.venue || isCreatingEvent}
-              className="px-8 py-3 bg-green-400 text-black font-bold hover:bg-green-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`px-8 py-3 font-bold transition-colors ${
+                connected && eventData.name && eventData.date && eventData.venue && !isCreatingEvent
+                  ? 'bg-green-400 text-black hover:bg-green-300'
+                  : 'bg-gray-500 text-gray-300 opacity-50 cursor-not-allowed'
+              }`}
+              title={!connected ? 'Connect wallet first' : !eventData.name || !eventData.date || !eventData.venue ? 'Fill in all required fields' : 'Create event and open payment'}
             >
-              {isCreatingEvent ? 'CREATING...' : 'GO LIVE'}
+              {isCreatingEvent ? 'CREATING...' : !connected ? 'CONNECT WALLET FIRST' : 'GO LIVE'}
             </button>
             
             {eventId && (
