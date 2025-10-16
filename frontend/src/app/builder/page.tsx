@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { WalletMultiButton } from '@/components/WalletProvider';
+import { MoonPayBuyWidget } from '@moonpay/moonpay-react';
 import axios from 'axios';
 
 interface EventData {
@@ -31,6 +32,10 @@ export default function BuilderPage() {
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
   const [eventId, setEventId] = useState<string | null>(null);
+  const [showMoonPayWidget, setShowMoonPayWidget] = useState(false);
+  const [isMinting, setIsMinting] = useState(false);
+  const [mintedNft, setMintedNft] = useState<string | null>(null);
+  const [passDownloadUrl, setPassDownloadUrl] = useState<string | null>(null);
 
   const handleInputChange = (field: keyof EventData, value: string | number) => {
     setEventData(prev => ({ ...prev, [field]: value }));
@@ -69,6 +74,53 @@ export default function BuilderPage() {
     } finally {
       setIsCreatingEvent(false);
     }
+  };
+
+  const handleBuyTicket = () => {
+    if (!eventId) {
+      alert('Please create an event first');
+      return;
+    }
+    if (!publicKey) {
+      alert('Please connect your wallet first');
+      return;
+    }
+    setShowMoonPayWidget(true);
+  };
+
+  const handleMoonPaySuccess = async (transactionId: string) => {
+    console.log('MoonPay transaction completed:', transactionId);
+    setShowMoonPayWidget(false);
+    setIsMinting(true);
+
+    try {
+      // Call backend to mint ticket after successful payment
+      const response = await axios.post(`${BACKEND_URL}/mint-ticket`, {
+        eventId,
+        paymentTxHash: transactionId,
+        buyerWallet: publicKey,
+        amount: eventData.price,
+        qrHash: `moonpay_qr_${transactionId}`,
+        zkEnabled: false
+      });
+
+      if (response.data.success) {
+        setMintedNft(response.data.nftMint);
+        setPassDownloadUrl(response.data.passDownloadUrl);
+        alert('Ticket minted successfully! You can now download your Apple Wallet Pass.');
+      }
+    } catch (error) {
+      console.error('Error minting ticket:', error);
+      alert('Payment successful but ticket minting failed. Please contact support.');
+    } finally {
+      setIsMinting(false);
+    }
+  };
+
+  const handleMoonPayError = (error: any) => {
+    console.error('MoonPay error:', error);
+    alert(`Payment failed: ${error?.message || 'Unknown error'}`);
+    setShowMoonPayWidget(false);
   };
 
   return (
@@ -407,6 +459,16 @@ export default function BuilderPage() {
             >
               {isCreatingEvent ? 'CREATING...' : 'GO LIVE'}
             </button>
+            
+            {eventId && (
+              <button
+                onClick={handleBuyTicket}
+                disabled={isMinting}
+                className="px-8 py-3 bg-purple-600 text-white font-bold hover:bg-purple-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isMinting ? 'MINTING...' : '💳 BUY TICKET (FIAT)'}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -438,13 +500,115 @@ export default function BuilderPage() {
               </button>
               <button
                 onClick={() => {
-                  setIsWalletConnected(true);
+                  setConnected(true);
                   setShowAccountModal(false);
                 }}
                 className="px-6 py-2 bg-green-400 text-black font-bold hover:bg-green-300 transition-colors"
               >
                 Connect
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MoonPay Widget Modal */}
+      {showMoonPayWidget && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border-2 border-purple-500 rounded-lg max-w-lg w-full relative">
+            <div className="p-4 border-b border-purple-500/30 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-purple-400">💳 Buy Ticket with Credit Card</h3>
+              <button
+                onClick={() => setShowMoonPayWidget(false)}
+                className="text-gray-400 hover:text-white text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <div className="mb-4 p-4 bg-purple-900/20 border border-purple-500/30 rounded">
+                <div className="flex justify-between mb-2">
+                  <span className="text-gray-400">Event:</span>
+                  <span className="text-white font-medium">{eventData.name}</span>
+                </div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-gray-400">Price:</span>
+                  <span className="text-green-400 font-bold">${eventData.price} USD</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Wallet:</span>
+                  <span className="text-purple-400 text-xs font-mono">{publicKey?.slice(0, 8)}...{publicKey?.slice(-8)}</span>
+                </div>
+              </div>
+
+              {/* MoonPay Widget */}
+              <MoonPayBuyWidget
+                variant="overlay"
+                baseCurrencyCode="usd"
+                baseCurrencyAmount={eventData.price.toString()}
+                defaultCurrencyCode="usdc_sol"
+                walletAddress={publicKey || ''}
+                onLogin={async () => {
+                  console.log('MoonPay login');
+                }}
+                onTransactionCompleted={async (props: any) => {
+                  console.log('Transaction completed:', props);
+                  handleMoonPaySuccess(props?.externalTransactionId || 'test_tx_' + Date.now());
+                }}
+                onError={async (error: any) => {
+                  handleMoonPayError(error);
+                }}
+              />
+
+              <div className="mt-4 p-3 bg-black/50 rounded text-xs text-gray-400 space-y-1">
+                <div>// Sandbox mode: Use test card 4539 9876 5432 1234</div>
+                <div>// Expiry: Any future date | CVV: Any 3 digits</div>
+                <div>// After payment: NFT auto-mints + Apple Pass generates</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal (NFT Minted + Pass Download) */}
+      {mintedNft && passDownloadUrl && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border-2 border-green-400 rounded-lg max-w-md w-full">
+            <div className="p-6 text-center">
+              <div className="text-6xl mb-4">🎉</div>
+              <h3 className="text-2xl font-bold text-green-400 mb-4">Ticket Minted!</h3>
+              
+              <div className="bg-black/50 p-4 rounded mb-6 text-left">
+                <div className="text-sm text-gray-400 mb-2">NFT Mint Address:</div>
+                <div className="text-xs text-green-400 font-mono break-all">{mintedNft}</div>
+              </div>
+
+              <div className="space-y-3">
+                <a
+                  href={passDownloadUrl}
+                  download="vamano-ticket.pkpass"
+                  className="block w-full py-3 bg-green-400 text-black font-bold rounded hover:bg-green-300 transition-colors"
+                >
+                  📲 Add to Apple Wallet
+                </a>
+                
+                <button
+                  onClick={() => {
+                    setMintedNft(null);
+                    setPassDownloadUrl(null);
+                  }}
+                  className="w-full py-3 border border-green-400 text-green-400 rounded hover:bg-green-400 hover:text-black transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+
+              <div className="mt-4 p-3 bg-black/50 rounded text-xs text-gray-400 space-y-1">
+                <div>// NFT stored on Solana Devnet</div>
+                <div>// Apple Wallet Pass ready for iOS scanning</div>
+                <div>// 10% royalties auto-enforced on resale</div>
+              </div>
             </div>
           </div>
         </div>

@@ -12,9 +12,13 @@ export const WalletContextProvider: FC<WalletContextProviderProps> = ({ children
 };
 
 // Mock wallet buttons
-export const WalletMultiButton = () => {
+interface WalletButtonProps {
+  className?: string;
+}
+
+export const WalletMultiButton: FC<WalletButtonProps> = ({ className }) => {
   return (
-    <button className="px-4 py-2 bg-green-400 text-black font-mono hover:bg-green-300">
+    <button className={className || "px-4 py-2 bg-green-400 text-black font-mono hover:bg-green-300"}>
       Connect Wallet (Mock)
     </button>
   );
