@@ -1,8 +1,12 @@
-'use client';
-
+import type { Metadata } from "next";
 import "./globals.css";
 import { WalletContextProvider } from "@/components/WalletProvider";
-import { MoonPayProvider } from "@moonpay/moonpay-react";
+import { MoonPayClientProvider } from "@/components/MoonPayClientProvider";
+
+export const metadata: Metadata = {
+  title: "VAMANO - Cypherpunk NFT Ticketing",
+  description: "Decentralized event ticketing with on-chain NFTs and Apple Wallet integration",
+};
 
 export default function RootLayout({
   children,
@@ -12,14 +16,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <MoonPayProvider
-          apiKey={process.env.NEXT_PUBLIC_MOONPAY_API_KEY || "pk_test_key"}
-          debug={true}
-        >
+        <MoonPayClientProvider>
           <WalletContextProvider>
             {children}
           </WalletContextProvider>
-        </MoonPayProvider>
+        </MoonPayClientProvider>
       </body>
     </html>
   );
