@@ -71,3 +71,4 @@ For development, you can use mock values:
 - `HELIUS_API_KEY=mock_helius_key`
 - PassKit will use mock pass generation without real certs
 
+

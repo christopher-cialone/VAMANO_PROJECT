@@ -490,3 +490,4 @@ The VAMANO MVP is **87.5% complete** with:
 
 **We're 4-6 hours away from a fully functional demo** once MoonPay and PassKit are integrated!
 
+

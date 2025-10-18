@@ -111,8 +111,9 @@ export default function BuilderPage() {
       // Call backend to mint ticket after successful payment
       const response = await axios.post(`${BACKEND_URL}/mint-ticket`, {
         eventId,
+        eventPda: eventId,
         paymentTxHash: transactionId,
-        buyerWallet: publicKey,
+        buyerWallet: publicKey?.toBase58(),
         amount: eventData.price,
         qrHash: `moonpay_qr_${transactionId}`,
         zkEnabled: false

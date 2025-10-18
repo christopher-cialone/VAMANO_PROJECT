@@ -21,7 +21,7 @@ dotenv.config();
 // 4. Add your MOONPAY_API_KEY and MOONPAY_SECRET to .env
 // ============================================================================
 
-const app = express();
+const app: express.Express = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
@@ -46,8 +46,8 @@ const provider = new AnchorProvider(connection, wallet, {
 // Program ID (will be updated after deployment)
 const PROGRAM_ID = new PublicKey(process.env.PROGRAM_ID || '2AXvXRn2TxQcwSKvGwGpyAwqn6n9QLb5ssK5cmA1auX4');
 
-// Initialize program
-const program = new Program(idl as any, PROGRAM_ID, provider);
+// Lazy program initialization to avoid runtime failures when env/IDL mismatch
+let program: Program | null = null;
 
 console.log('🔗 Connected to Solana:', connection.rpcEndpoint);
 console.log('📋 Program ID:', PROGRAM_ID.toString());
@@ -130,6 +130,9 @@ app.post('/create-event', async (req: Request, res: Response) => {
 
     /* 
     // Real CPI call (uncomment after deployment):
+    if (!program) {
+      program = new (Program as unknown as any)(idl as any, PROGRAM_ID as unknown as any, provider as unknown as any);
+    }
     const tx = await program.methods
       .initEvent(
         name,
@@ -189,6 +192,9 @@ app.post('/mint-ticket', async (req: Request, res: Response) => {
 
     /*
     // Real CPI call (uncomment after deployment):
+    if (!program) {
+      program = new (Program as unknown as any)(idl as any, PROGRAM_ID as unknown as any, provider as unknown as any);
+    }
     const tx = await program.methods
       .mintTicket(
         new BN(amount || 50000000), // USDC amount
@@ -441,6 +447,9 @@ app.post('/moonpay-callback', async (req: Request, res: Response) => {
 
         /*
         // Real CPI call (uncomment after deployment):
+        if (!program) {
+          program = new (Program as unknown as any)(idl as any, PROGRAM_ID as unknown as any, provider as unknown as any);
+        }
         const tx = await program.methods
           .mintTicket(
             new BN(data.quoteCurrencyAmount * 1000000), // Convert to smallest unit

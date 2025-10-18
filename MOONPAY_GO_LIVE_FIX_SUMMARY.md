@@ -369,3 +369,4 @@ Users can now:
 *Branch: feature/server-fixes-and-wallet-adapter*  
 *All 4 steps complete and tested*
 
+
