@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { WalletContextProvider } from "@/components/WalletProvider";
-import { MoonPayClientProvider } from "@/components/MoonPayClientProvider";
+import MoonPayBoundary from "@/components/MoonPayBoundary";
 
 export const metadata: Metadata = {
   title: "VAMANO - Cypherpunk NFT Ticketing",
@@ -16,11 +16,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <MoonPayClientProvider>
-          <WalletContextProvider>
+        <WalletContextProvider>
+          <MoonPayBoundary>
             {children}
-          </WalletContextProvider>
-        </MoonPayClientProvider>
+          </MoonPayBoundary>
+        </WalletContextProvider>
       </body>
     </html>
   );

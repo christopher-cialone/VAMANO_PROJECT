@@ -4,7 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { WalletMultiButton } from '@/components/WalletProvider';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { MoonPayBuyWidget } from '@moonpay/moonpay-react';
+import dynamic from 'next/dynamic';
+const MoonPayBuyWidget = dynamic(() => import('@moonpay/moonpay-react').then(m => m.MoonPayBuyWidget), { ssr: false });
 import axios from 'axios';
 
 interface EventData {
@@ -590,10 +591,6 @@ export default function BuilderPage() {
                   console.log('✅ Transaction completed:', props);
                   setShowMoonPayWidget(false);
                   handleMoonPaySuccess(props?.externalTransactionId || 'test_tx_' + Date.now());
-                }}
-                onError={async (error: any) => {
-                  console.error('❌ MoonPay error:', error);
-                  handleMoonPayError(error);
                 }}
               />
 

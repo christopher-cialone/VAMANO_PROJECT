@@ -384,8 +384,8 @@ app.post('/moonpay-callback', async (req: Request, res: Response) => {
     });
 
     // Step 1: Verify webhook signature (Production only)
-    const moonpaySignature = req.headers['moonpay-signature'] as string;
-    const moonpaySecret = process.env.MOONPAY_SECRET || 'test_secret_123';
+    const moonpaySignature = (req.headers['moonpay-signature'] || req.headers['x-moonpay-signature']) as string;
+    const moonpayWebhookKey = process.env.MOONPAY_WEBHOOK_KEY || process.env.MOONPAY_SECRET || 'test_secret_123';
 
     if (process.env.NODE_ENV === 'production') {
       if (!moonpaySignature) {
@@ -394,7 +394,7 @@ app.post('/moonpay-callback', async (req: Request, res: Response) => {
       }
 
       const computedSignature = crypto
-        .createHmac('sha256', moonpaySecret)
+        .createHmac('sha256', moonpayWebhookKey)
         .update(JSON.stringify(req.body))
         .digest('hex');
 
