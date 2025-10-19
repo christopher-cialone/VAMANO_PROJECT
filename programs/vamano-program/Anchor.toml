@@ -4,9 +4,17 @@ skip-lint = false
 
 [programs.devnet]
 vamano_program = "2AXvXRn2TxQcwSKvGwGpyAwqn6n9QLb5ssK5cmA1auX4"
+event_factory = "EventFactory1111111111111111111111111111111111" # TODO: replace after deploy
+ticket_mint = "TicketMint111111111111111111111111111111111111"   # TODO: replace after deploy
+escrow_manager = "EscrowMgr111111111111111111111111111111111111" # TODO: replace after deploy
+royalties_enforcer = "Royalties111111111111111111111111111111111" # TODO: replace after deploy
 
 [programs.localnet]
 vamano_program = "2AXvXRn2TxQcwSKvGwGpyAwqn6n9QLb5ssK5cmA1auX4"
+event_factory = "EventFactory1111111111111111111111111111111111" # TODO: replace after deploy
+ticket_mint = "TicketMint111111111111111111111111111111111111"   # TODO: replace after deploy
+escrow_manager = "EscrowMgr111111111111111111111111111111111111" # TODO: replace after deploy
+royalties_enforcer = "Royalties111111111111111111111111111111111" # TODO: replace after deploy
 
 [registry]
 url = "https://api.apr.dev"

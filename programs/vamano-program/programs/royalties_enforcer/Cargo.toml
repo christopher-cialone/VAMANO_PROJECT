@@ -1,0 +1,20 @@
+[package]
+name = "royalties_enforcer"
+version = "0.1.0"
+description = "VAMANO Royalties Enforcer Program"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "royalties_enforcer"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+
+[dependencies]
+anchor-lang = "0.28.0"
+
+
