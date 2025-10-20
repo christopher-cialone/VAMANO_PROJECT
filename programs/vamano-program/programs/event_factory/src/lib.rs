@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("EventFactory1111111111111111111111111111111111");
+declare_id!("11111111111111111111111111111111");
 
 #[program]
 pub mod event_factory {
@@ -40,10 +40,10 @@ pub struct InitEvent<'info> {
         seeds = [b"event", creator.key().as_ref(), name.as_bytes()],
         bump
     )]
-    pub event_pda: Account<'info, Event>;
+    pub event_pda: Account<'info, Event>,
     #[account(mut)]
-    pub creator: Signer<'info>;
-    pub system_program: Program<'info, System>;
+    pub creator: Signer<'info>,
+    pub system_program: Program<'info, System>,
 }
 
 #[account]

@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("TicketMint111111111111111111111111111111111111");
+declare_id!("11111111111111111111111111111111");
 
 #[program]
 pub mod ticket_mint {
@@ -26,11 +26,14 @@ pub mod ticket_mint {
 
 #[derive(Accounts)]
 pub struct MintTicket<'info> {
-    /// Event PDA from EventFactory
+    /// CHECK: Event PDA from EventFactory. This account is only read for its key
+    /// and verified off-chain to correspond to the event being minted against.
+    /// No data is deserialized here to avoid cross-program type coupling.
     pub event: AccountInfo<'info>,
     /// Buyer paying and receiving NFT (via MPL-404 CPI in later iteration)
     pub buyer: Signer<'info>,
-    /// CHECK: Escrow PDA managed by EscrowManager
+    /// CHECK: Escrow PDA managed by EscrowManager. Balance and authority
+    /// checks are enforced within EscrowManager and off-chain before CPI.
     pub escrow: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
 }

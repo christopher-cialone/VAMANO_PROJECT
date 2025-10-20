@@ -4,17 +4,17 @@ skip-lint = false
 
 [programs.devnet]
 vamano_program = "2AXvXRn2TxQcwSKvGwGpyAwqn6n9QLb5ssK5cmA1auX4"
-event_factory = "EventFactory1111111111111111111111111111111111" # TODO: replace after deploy
-ticket_mint = "TicketMint111111111111111111111111111111111111"   # TODO: replace after deploy
-escrow_manager = "EscrowMgr111111111111111111111111111111111111" # TODO: replace after deploy
-royalties_enforcer = "Royalties111111111111111111111111111111111" # TODO: replace after deploy
+event_factory = "11111111111111111111111111111111" # placeholder until deploy
+ticket_mint = "11111111111111111111111111111111"   # placeholder until deploy
+escrow_manager = "11111111111111111111111111111111" # placeholder until deploy
+royalties_enforcer = "11111111111111111111111111111111" # placeholder until deploy
 
 [programs.localnet]
 vamano_program = "2AXvXRn2TxQcwSKvGwGpyAwqn6n9QLb5ssK5cmA1auX4"
-event_factory = "EventFactory1111111111111111111111111111111111" # TODO: replace after deploy
-ticket_mint = "TicketMint111111111111111111111111111111111111"   # TODO: replace after deploy
-escrow_manager = "EscrowMgr111111111111111111111111111111111111" # TODO: replace after deploy
-royalties_enforcer = "Royalties111111111111111111111111111111111" # TODO: replace after deploy
+event_factory = "11111111111111111111111111111111" # placeholder until deploy
+ticket_mint = "11111111111111111111111111111111"   # placeholder until deploy
+escrow_manager = "11111111111111111111111111111111" # placeholder until deploy
+royalties_enforcer = "11111111111111111111111111111111" # placeholder until deploy
 
 [registry]
 url = "https://api.apr.dev"
@@ -25,3 +25,6 @@ wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+
+[toolchain]
+anchor_version = "0.28.0"

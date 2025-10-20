@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("Royalties111111111111111111111111111111111111");
+declare_id!("11111111111111111111111111111111");
 
 #[program]
 pub mod royalties_enforcer {
@@ -28,11 +28,13 @@ pub mod royalties_enforcer {
 pub struct EnforceRoyalties<'info> {
     /// CHECK: seller account (USDC source) referenced for SPL CPI in future
     pub seller: AccountInfo<'info>,
-    /// CHECK: royalty recipients; SPL transfers will be added later
+    /// CHECK: artist recipient vault (e.g., USDC ATA). SPL transfer checks will be enforced in CPI.
     #[account(mut)]
     pub artist: AccountInfo<'info>,
+    /// CHECK: organizer recipient vault (e.g., USDC ATA). SPL transfer checks will be enforced in CPI.
     #[account(mut)]
     pub organizer: AccountInfo<'info>,
+    /// CHECK: platform recipient vault (e.g., USDC ATA). SPL transfer checks will be enforced in CPI.
     #[account(mut)]
     pub platform: AccountInfo<'info>,
 }
