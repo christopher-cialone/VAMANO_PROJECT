@@ -16,5 +16,6 @@ cpi = ["no-entrypoint"]
 
 [dependencies]
 anchor-lang = "0.28.0"
+anchor-spl = "0.28.0"
 
 

@@ -1,6 +1,4 @@
 Paste this into Cursor MCP Guidelines:
-
-```
 <MCP_USE_GUIDELINE>
   <INSTRUCTION>
     If Solana-related, use tools: 'Ask Solana Expert' for concepts/APIs/errors,
@@ -9,6 +7,5 @@ Paste this into Cursor MCP Guidelines:
   </INSTRUCTION>
   <TOOLS>Solana Expert, Doc Search, Anchor Expert</TOOLS>
 </MCP_USE_GUIDELINE>
-```
 
 
