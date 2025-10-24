@@ -13,23 +13,38 @@ export default defineConfig({
   },
   projects: [
     {
-      name: 'chromium',
+      name: 'frontend-e2e',
+      testMatch: '**/vamano-e2e.spec.ts',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'api-smoke',
+      testMatch: '**/api-smoke.spec.ts',
       use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'firefox',
+      testMatch: '**/vamano-e2e.spec.ts',
       use: { ...devices['Desktop Firefox'] },
     },
     {
       name: 'webkit',
+      testMatch: '**/vamano-e2e.spec.ts',
       use: { ...devices['Desktop Safari'] },
     },
   ],
-  webServer: {
-    command: 'yarn workspace frontend dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    {
+      command: 'yarn workspace frontend dev',
+      url: 'http://localhost:3000',
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command: 'yarn workspace backend dev',
+      url: 'http://localhost:3001',
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
 });
 
 
