@@ -22,7 +22,8 @@ pub mod escrow_manager {
 
     pub fn release_escrow(ctx: Context<ReleaseEscrow>, amount: u64, decimals: u8, authority_bump: u8) -> Result<()> {
         // Transfer USDC from escrow ATA to organizer ATA, signed by program authority PDA
-        let seeds: &[&[u8]] = &[b"authority", ctx.accounts.event.key().as_ref(), &[authority_bump]];
+        let event_key = ctx.accounts.event.key();
+        let seeds: &[&[u8]] = &[b"authority", event_key.as_ref(), &[authority_bump]];
         let signer = &[seeds];
 
         let cpi_accounts = TransferChecked {

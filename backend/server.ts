@@ -43,14 +43,41 @@ const provider = new AnchorProvider(connection, wallet, {
   commitment: 'confirmed',
 });
 
-// Program ID (will be updated after deployment)
-const PROGRAM_ID = new PublicKey(process.env.PROGRAM_ID || '2AXvXRn2TxQcwSKvGwGpyAwqn6n9QLb5ssK5cmA1auX4');
+// Program IDs (will be updated after deployment)
+const PROGRAM_ID_EVENT_FACTORY = new PublicKey(process.env.PROGRAM_ID_EVENT_FACTORY || '11111111111111111111111111111111');
+const PROGRAM_ID_TICKET_MINT = new PublicKey(process.env.PROGRAM_ID_TICKET_MINT || '11111111111111111111111111111111');
+const PROGRAM_ID_ESCROW_MANAGER = new PublicKey(process.env.PROGRAM_ID_ESCROW_MANAGER || '11111111111111111111111111111111');
+const PROGRAM_ID_ROYALTIES_ENFORCER = new PublicKey(process.env.PROGRAM_ID_ROYALTIES_ENFORCER || '11111111111111111111111111111111');
 
 // Lazy program initialization to avoid runtime failures when env/IDL mismatch
-let program: Program | null = null;
+let eventFactoryProgram: Program | null = null;
+let ticketMintProgram: Program | null = null;
+let escrowManagerProgram: Program | null = null;
+let royaltiesEnforcerProgram: Program | null = null;
 
 console.log('🔗 Connected to Solana:', connection.rpcEndpoint);
-console.log('📋 Program ID:', PROGRAM_ID.toString());
+console.log('📋 Program IDs:', {
+  eventFactory: PROGRAM_ID_EVENT_FACTORY.toString(),
+  ticketMint: PROGRAM_ID_TICKET_MINT.toString(),
+  escrowManager: PROGRAM_ID_ESCROW_MANAGER.toString(),
+  royaltiesEnforcer: PROGRAM_ID_ROYALTIES_ENFORCER.toString()
+});
+
+// Helper function to initialize program clients
+function initializePrograms() {
+  try {
+    // Load IDLs (will be generated after deployment)
+    // For now, using placeholder IDLs
+    eventFactoryProgram = new Program(idl as any, PROGRAM_ID_EVENT_FACTORY, provider);
+    ticketMintProgram = new Program(idl as any, PROGRAM_ID_TICKET_MINT, provider);
+    escrowManagerProgram = new Program(idl as any, PROGRAM_ID_ESCROW_MANAGER, provider);
+    royaltiesEnforcerProgram = new Program(idl as any, PROGRAM_ID_ROYALTIES_ENFORCER, provider);
+    
+    console.log('✅ All programs initialized successfully');
+  } catch (error) {
+    console.error('❌ Failed to initialize programs:', error);
+  }
+}
 
 // Mock Helius SDK for verification
 class MockHelius {
@@ -98,8 +125,13 @@ app.get('/health', (req: Request, res: Response) => {
   res.json({
     status: 'OK',
     timestamp: new Date().toISOString(),
-    message: 'VAMANO Backend with Anchor CPI stubs',
-    programId: PROGRAM_ID.toString(),
+    message: 'VAMANO Backend with multi-program Anchor setup',
+    programIds: {
+      eventFactory: PROGRAM_ID_EVENT_FACTORY.toString(),
+      ticketMint: PROGRAM_ID_TICKET_MINT.toString(),
+      escrowManager: PROGRAM_ID_ESCROW_MANAGER.toString(),
+      royaltiesEnforcer: PROGRAM_ID_ROYALTIES_ENFORCER.toString()
+    },
     network: connection.rpcEndpoint,
   });
 });
@@ -118,13 +150,38 @@ app.post('/create-event', async (req: Request, res: Response) => {
     const creatorPubkey = new PublicKey(creatorWallet);
     const [eventPda, bump] = PublicKey.findProgramAddressSync(
       [Buffer.from('event'), creatorPubkey.toBuffer(), Buffer.from(name)],
-      PROGRAM_ID
+      PROGRAM_ID_EVENT_FACTORY
     );
 
     console.log('📍 Event PDA:', eventPda.toString());
     console.log('🔢 Bump:', bump);
 
-    // CPI Stub: In production, this would call the actual program
+    // CPI: Call EventFactory.initEvent
+    // TODO: Replace with real CPI when programs are deployed
+    if (eventFactoryProgram) {
+      try {
+        const txSig = await eventFactoryProgram.methods
+          .initEvent(
+            name,
+            new BN(date),
+            venue,
+            new BN(supply || 100),
+            new BN(priceUsdc || 50),
+            [] // base_traits - will be populated from frontend
+          )
+          .accounts({
+            eventPda: eventPda,
+            creator: creatorPubkey,
+            systemProgram: SystemProgram.programId,
+          })
+          .rpc({ commitment: 'confirmed' });
+        
+        console.log('✅ Event created on-chain:', txSig);
+      } catch (error) {
+        console.error('❌ CPI failed:', error);
+        // Continue with mock response for now
+      }
+    }
     // For now, we simulate the call and return the expected result
     const mockTxSignature = `mock_tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
