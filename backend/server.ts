@@ -79,42 +79,103 @@ function initializePrograms() {
   }
 }
 
-// Mock Helius SDK for verification
-class MockHelius {
+// Real Helius SDK for verification
+class HeliusClient {
+  private apiKey: string;
+  private baseUrl: string;
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
+    this.baseUrl = `https://api.helius.xyz/v0`;
+  }
+
   async getAssetProof(mintAddress: string) {
-    console.log(`🔍 Mock Helius: Verifying asset proof for ${mintAddress}`);
-    return {
-      ownership: {
-        owner: new PublicKey("MockOwnerPublicKey11111111111111111111111111"),
-        delegatedBy: null,
-        frozen: false,
-      },
-      compression: {
-        compressed: true,
-        tree: new PublicKey("MockTreePublicKey11111111111111111111111111"),
-        leafId: 1,
-      },
-    };
+    try {
+      console.log(`🔍 Helius: Fetching asset proof for ${mintAddress}`);
+      
+      const response = await fetch(`${this.baseUrl}/addresses/${mintAddress}/assets?api-key=${this.apiKey}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Helius API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data || data.length === 0) {
+        throw new Error('Asset not found');
+      }
+
+      const asset = data[0];
+      
+      return {
+        ownership: {
+          owner: asset.ownership?.owner || 'unknown',
+          delegated: asset.ownership?.delegated || false,
+          frozen: asset.ownership?.frozen || false,
+        },
+        compression: {
+          compressed: asset.compression?.compressed || false,
+          data_hash: asset.compression?.data_hash || '',
+          creator_hash: asset.compression?.creator_hash || '',
+          asset_hash: asset.compression?.asset_hash || '',
+        },
+        content: asset.content,
+        id: asset.id,
+        interface: asset.interface,
+        authorities: asset.authorities || [],
+        royalty: asset.royalty || {},
+        supply: asset.supply || {},
+        mutable: asset.mutable || false,
+        burnt: asset.burnt || false,
+        token_info: asset.token_info || {},
+        grouping: asset.grouping || [],
+        creators: asset.creators || [],
+        ownership_model: asset.ownership_model || 'single',
+        delegate: asset.delegate || null,
+        frozen: asset.frozen || false,
+        metadata: asset.content?.metadata || {},
+      };
+    } catch (error) {
+      console.error('❌ Helius API error:', error);
+      throw error;
+    }
   }
 
   async getAsset(mintAddress: string) {
-    console.log(`🔍 Mock Helius: Fetching asset ${mintAddress}`);
-    return {
-      id: mintAddress,
-      content: {
-        metadata: {
-          name: "VAMANO Ticket",
-          symbol: "TICKET",
+    try {
+      console.log(`🔍 Helius: Fetching asset ${mintAddress}`);
+      
+      const response = await fetch(`${this.baseUrl}/addresses/${mintAddress}/assets?api-key=${this.apiKey}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      },
-      ownership: {
-        owner: mockKeypair.publicKey.toString(),
-      },
-    };
+      });
+
+      if (!response.ok) {
+        throw new Error(`Helius API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data || data.length === 0) {
+        throw new Error('Asset not found');
+      }
+
+      return data[0];
+    } catch (error) {
+      console.error('❌ Helius API error:', error);
+      throw error;
+    }
   }
 }
 
-const helius = new MockHelius();
+const helius = new HeliusClient(process.env.HELIUS_API_KEY || 'mock_key');
 
 // ============================================================================
 // API Endpoints
@@ -362,47 +423,104 @@ app.post('/mint-ticket', async (req: Request, res: Response) => {
   }
 });
 
-// Verify ticket with Helius integration
+// Verify ticket with Helius DAS integration
 app.get('/verify-qr/:qrHash', async (req: Request, res: Response) => {
   try {
     const { qrHash } = req.params;
     console.log('🔍 Verifying QR:', qrHash);
 
-    // In production: Parse QR hash to extract NFT mint address
-    // For now, treat qrHash as the mint address
-    const isValidFormat = qrHash && (qrHash.startsWith('nft_') || qrHash.length > 30);
+    // Parse QR hash to extract NFT mint address
+    // QR hash format: sha256(mintPubkey + customTraits)
+    // For now, we'll treat qrHash as the mint address directly
+    // In production, you'd need to store the mapping or derive it differently
+    const isValidFormat = qrHash && qrHash.length >= 32;
 
     if (!isValidFormat) {
       return res.status(400).json({
         valid: false,
         message: 'Invalid QR code format',
+        qrHash: qrHash
       });
     }
 
-    // Use Helius to verify NFT ownership
+    // Use Helius DAS to verify NFT ownership
     try {
-      const asset = await helius.getAsset(qrHash);
+      console.log('🔍 Fetching asset proof from Helius DAS...');
       const assetProof = await helius.getAssetProof(qrHash);
+      const asset = await helius.getAsset(qrHash);
+
+      // Validate ownership and asset properties
+      const isValidOwnership = assetProof.ownership && 
+                               assetProof.ownership.owner && 
+                               assetProof.ownership.owner !== 'unknown';
+      
+      const isNotFrozen = !assetProof.ownership.frozen;
+      const isNotBurnt = !assetProof.burnt;
+
+      if (!isValidOwnership) {
+        return res.status(400).json({
+          valid: false,
+          message: 'Invalid asset ownership',
+          qrHash: qrHash,
+          heliusVerified: true
+        });
+      }
+
+      if (!isNotFrozen) {
+        return res.status(400).json({
+          valid: false,
+          message: 'Asset is frozen',
+          qrHash: qrHash,
+          heliusVerified: true
+        });
+      }
+
+      if (!isNotBurnt) {
+        return res.status(400).json({
+          valid: false,
+          message: 'Asset is burnt',
+          qrHash: qrHash,
+          heliusVerified: true
+        });
+      }
+
+      // Extract event information from metadata
+      const eventName = asset.metadata?.name || 'VAMANO Event';
+      const eventDescription = asset.metadata?.description || 'NFT Ticket';
 
       res.json({
         valid: true,
         nftMint: qrHash,
-        owner: assetProof.ownership.owner.toString(),
-        event: 'Cypherpunk Concert 2025',
+        owner: assetProof.ownership.owner,
+        event: eventName,
+        description: eventDescription,
         compressed: assetProof.compression.compressed,
-        message: 'Ticket verified successfully',
+        interface: assetProof.interface,
+        creators: assetProof.creators,
+        royalty: assetProof.royalty,
+        message: 'Ticket verified successfully via Helius DAS',
         verifiedAt: new Date().toISOString(),
         heliusVerified: true,
+        assetProof: {
+          ownership: assetProof.ownership,
+          compression: assetProof.compression,
+          metadata: assetProof.metadata
+        }
       });
+
     } catch (heliusError) {
-      console.warn('⚠️  Helius verification failed, using fallback');
+      console.warn('⚠️  Helius DAS verification failed:', heliusError);
+      
+      // Fallback verification (for development/testing)
       res.json({
         valid: true,
         nftMint: qrHash,
-        owner: 'mock_owner_address',
-        event: 'Cypherpunk Concert 2025',
-        message: 'Ticket verified (fallback)',
+        owner: 'fallback_owner_address',
+        event: 'VAMANO Event (Fallback)',
+        message: 'Ticket verified (Helius DAS unavailable - using fallback)',
+        verifiedAt: new Date().toISOString(),
         heliusVerified: false,
+        error: heliusError instanceof Error ? heliusError.message : 'Unknown error'
       });
     }
   } catch (error) {
