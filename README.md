@@ -56,7 +56,7 @@ vamano/
 - **Solana CLI** (latest)
 - **Anchor CLI** 0.30.1+
 
-### Installation
+### Installation Directions
 
 ```bash
 # Clone the repository
